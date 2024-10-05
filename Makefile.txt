@@ -1,0 +1,25 @@
+# Name of the executable
+EXEC = main.exe
+
+# Compiler and flags
+CXX = g++
+CXXFLAGS = -Wall -g
+
+# Source file(s)
+SRC = main.cpp
+
+# Object file(s)
+OBJ = $(SRC:.cpp=.o)
+
+# Rule to build the executable
+$(EXEC): $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $(EXEC) $(OBJ)
+
+# Rule to build the object file(s)
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean up build files (Windows specific)
+.PHONY: clean
+clean:
+	del /Q $(EXEC) $(OBJ)
