@@ -1,25 +1,60 @@
-# Name of the executable
-EXEC = main.exe
+# Compiler and flags for MinGW
+CC := g++
+CFLAGS := -Iglfw/include -Iglad -Iinclude -Isrc -Wall -Wextra -g
+LDFLAGS := -Lglfw/lib-mingw-w64 -lglfw3dll -lgdi32 -lopengl32 -static-libgcc -static-libstdc++ -v
 
-# Compiler and flags
-CXX = g++
-CXXFLAGS = -Wall -g
+# Directories
+SRC_DIR := src
+GLAD_DIR := glad
+BIN_DIR := bin
+OBJ_DIR := obj
+INCLUDE_DIR := include
 
-# Source file(s)
-SRC = main.cpp
+# Source files
+SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
+GLAD_FILES := $(wildcard $(GLAD_DIR)/*.c)
+MINIZ_FILES := $(wildcard $(MINIZ_DIR)/*.c)
 
-# Object file(s)
-OBJ = $(SRC:.cpp=.o)
+# Object files (create .o files for each .cpp and .c)
+OBJ_FILES := $(OBJ_DIR)/main.o $(OBJ_DIR)/glad.o 
 
-# Rule to build the executable
-$(EXEC): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $(EXEC) $(OBJ)
+# Final executable
+EXECUTABLE := $(BIN_DIR)/raytracer.exe
 
-# Rule to build the object file(s)
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# Ensure output directories exist
+$(BIN_DIR):
+	@if not exist $(BIN_DIR) mkdir $(BIN_DIR)
 
-# Clean up build files (Windows specific)
-.PHONY: clean
+$(OBJ_DIR):
+	@if not exist $(OBJ_DIR) mkdir $(OBJ_DIR)
+
+# Target to compile the project
+all: $(EXECUTABLE)
+
+# Compile main.cpp into an object file
+$(OBJ_DIR)/main.o: $(SRC_DIR)/main.cpp | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+	@echo "Compiled $< into $@"
+
+# Compile glad.c into an object file
+$(OBJ_DIR)/glad.o: $(GLAD_DIR)/glad.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+	@echo "Compiled $< into $@"
+
+# Link the object files into the final executable
+$(EXECUTABLE): $(OBJ_FILES) | $(BIN_DIR)
+	$(CC) $(OBJ_FILES) -o $(EXECUTABLE) $(LDFLAGS)
+	@echo "Linked $(OBJ_FILES) into $(EXECUTABLE)"
+
+# Clean up generated files
 clean:
-	del /Q $(EXEC) $(OBJ)
+	@if exist $(OBJ_DIR) rmdir /S /Q $(OBJ_DIR)
+	@if exist $(BIN_DIR)\*.exe del /f /q $(BIN_DIR)\*.exe
+
+run:
+	make -f Makefile.txt clean
+	make -f Makefile.txt all
+	
+
+# PHONY targets (not actual files)
+.PHONY: all clean
