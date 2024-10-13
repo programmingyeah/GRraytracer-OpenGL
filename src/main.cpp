@@ -8,6 +8,33 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+// Camera properties
+float cameraPosX = 0.0f, cameraPosY = 0.0f, cameraPosZ = -8.0f; // Initial camera position
+float cameraSpeed = 0.25f/5; // Camera movement speed
+
+void processInput(GLFWwindow *window) {
+    // Handle WASD for forward/backward/left/right movement
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) // Move forward
+        cameraPosZ += cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) // Move backward
+        cameraPosZ -= cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) // Move left
+        cameraPosX -= cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) // Move right
+        cameraPosX += cameraSpeed;
+
+    // Handle EQ for up/down movement
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) // Move up
+        cameraPosY += cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) // Move down
+        cameraPosY -= cameraSpeed;
+
+    // Handle escape key to unlock the cursor
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // Show cursor
+    }
+}
+
 // Function to load shader from file
 std::string loadShaderSource(const char* filePath) {
     std::ifstream shaderFile(filePath);
@@ -47,7 +74,6 @@ GLuint loadHDRTexture(const char* filePath) {
 
     return textureID; // Return the generated texture ID
 }
-
 
 // Function to compile and link shaders
 GLuint compileShaderProgram(const char* vertexPath, const char* fragmentPath) {
@@ -170,18 +196,18 @@ int main() {
     // Set up uniform locations
     glUseProgram(shaderProgram);
     GLint cameraPosLoc = glGetUniformLocation(shaderProgram, "cameraPos");
-    GLint cameraDirLoc = glGetUniformLocation(shaderProgram, "cameraDir");
     GLint lightPosLoc = glGetUniformLocation(shaderProgram, "lightPos");
+    GLint cameraDirLoc = glGetUniformLocation(shaderProgram, "cameraDir");
     GLint screenSizeLoc = glGetUniformLocation(shaderProgram, "screenSize");
     GLuint hdrTexture = loadHDRTexture("resources/rogland_clear_night_4k.hdr");
 
-    // Check if texture was loaded successfully
     if (hdrTexture == 0) {
         std::cerr << "Failed to load HDR texture!" << std::endl;
     }
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
+        processInput(window);
         // Get updated window size and pass it to the shader
         glfwGetFramebufferSize(window, &width, &height);
         glUniform2f(screenSizeLoc, (float)width, (float)height);
@@ -189,10 +215,9 @@ int main() {
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Set camera position, direction, and light position
-        glUniform3f(cameraPosLoc, 0.0f, 0.0f, -12.0f);  // Camera behind the sphere
-        glUniform3f(cameraDirLoc, 0.0f, 0.0f, 1.0f);   // Looking towards the sphere
-        glUniform3f(lightPosLoc, 2.0f, 2.0f, -2.0f);   // Light above the sphere
+        glUniform3f(cameraPosLoc, cameraPosX, cameraPosY, cameraPosZ);
+        glUniform3f(cameraDirLoc, 0, 0, 0.0); //note, camera directions literally just dont work
+        glUniform3f(lightPosLoc, 2.0f, 2.0f, -2.0f);  
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrTexture);
@@ -204,7 +229,6 @@ int main() {
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-        // Swap buffers and poll for events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -214,7 +238,6 @@ int main() {
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
 
-    // Terminate GLFW
     glfwTerminate();
     return 0;
 }
